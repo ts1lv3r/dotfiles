@@ -1,0 +1,317 @@
+#!/bin/bash
+
+#########
+# Basic #
+#########
+zsh_installation() {
+  sudo apt-get install -y zsh  # instead of `bash`
+  sudo chsh -s /usr/bin/zsh
+}
+
+curl_installation() {
+  sudo apt-get install -y curl
+}
+
+tmux_installation() {
+  sudo apt-get install -y tmux
+}
+
+nvim_installation() {
+  curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
+  chmod u+x nvim.appimage
+  ./nvim.appimage --appimage-extract
+  rm ./nvim.appimage
+
+  sudo mv squashfs-root /
+  sudo ln -s /squashfs-root/AppRun /usr/bin/nvim
+}
+
+nvim_sub_installation() {
+  sudo apt-get install -y fzf \
+                          ripgrep
+  # for node
+  curl -sL install-node.now.sh/lts | sudo bash
+  # for update npm
+  npm update -g npm
+  # for nvim-treesitter
+  sudo npm install -g tree-sitter
+  sudo npm install -g tree-sitter-cli
+}
+
+nerd_fonts_installation() {
+  # for patched NerdFonts
+  mkdir -p ~/.local/share/fonts
+  cd ~/.local/share/fonts && curl -fLO https://github.com/ryanoasis/nerd-fonts/raw/HEAD/patched-fonts/DroidSansMono/DroidSansMNerdFont-Regular.otf
+
+  # git clone --branch=master --depth 1 https://github.com/ryanoasis/nerd-fonts.git
+  # cd nerd-fonts || exit
+  # ./install.sh DroidSansMono
+  # cd ..
+  # rm -rf nerd-fonts
+}
+
+py_setup() {
+  sudo apt-get install -y python3 \
+                          python3-pip
+  # for pyenv
+  git clone https://github.com/pyenv/pyenv.git ~/.pyenv
+}
+
+dotfiles_setup() {
+  if [[ ! -d ~/".dotfiles_backup" ]]; then
+    mkdir ~/".dotfiles_backup"
+  fi
+
+  for f in .??*
+  do
+    [[ $f == ".git" ]] && continue
+    [[ $f == ".gitignore" ]] && continue
+
+    # The file aleready be existed
+    if [[ -f ~/$f ]]; then
+      mv ~/"$f" ~/.dotfiles_backup/
+      ln -s "$(pwd)/$f" ~/"$f"
+    # The directory aleready be existed
+    elif [[ -d ~/$f ]]; then
+      for f2 in .??*
+      do
+        if [[ -f ~/$f/$f2 ]]; then
+          mkdir ~/.dotfiles_backup/"$f"
+          mv ~/"$f"/"$f2" ~/.dotfiles_backup/"$f"/
+        fi
+          ln -s "$(pwd)/$f/$f2" ~/"$f"/
+      done
+    # The file or directory not be existed
+    else
+      ln -s "$(pwd)/$f" ~/"$f"
+    fi
+  done
+
+  sed -i 's/ZSH_THEME=".*"/ZSH_THEME="jispwoso"/g' ./.zshrc
+}
+
+##########
+# Option #
+##########
+fq_installation() {
+  # jq for binary data
+  sudo apt-get install -y fq
+}
+
+bat_installation() {
+  # improved `cat`
+  sudo apt-get install -y bat
+}
+
+fd-find_installation() {
+  # improved `find`
+  sudo apt-get install -y fd-find
+}
+
+shellcheck_installation() {
+  # linter for `bash`
+  sudo apt-get install -y shellcheck
+}
+
+translate-shell_installation() {
+  sudo apt-get install -y translate-shell
+}
+
+neofetch_installation() {
+  sudo apt-get install -y neofetch
+}
+
+thefuck_setup() {
+  sudo apt-get install -y thefuck
+  cat << EOF >> ~/.bash_profile
+# For thefuck
+eval "\$(thefuck --alias)"
+EOF
+}
+
+easy_rust_exec_setup() {
+  cat << EOF > ./easy_rust_exec
+#!/bin/bash
+name=\$(basename \$1 .rs)
+rustc \$@ && ./\$name && rm \$name
+EOF
+  sudo ln -s "$(pwd)/easy_rust_exec" /usr/local/bin/rust
+}
+
+err() {
+  echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: $*" >&2
+}
+
+main() {
+  cat <<EOF
+#######################
+#  Basic Installtion  #
+#######################
+EOF
+
+  sudo apt-get update
+
+  current_shell="$(echo $SHELL)"
+  if [[ "$current_shell" != *"zsh"* ]]; then
+    read -p "Install zsh [Enter]:"
+    if ! zsh_installation; then
+      err "Error in zsh_installation"
+    fi
+  fi
+
+  command -v curl
+  if [ $? -ne 0 ]; then
+    read -p "Install curl [Enter]:"
+    if ! curl_installation; then
+      err "Error in curl_installation"
+    fi
+  fi
+
+  command -v tmux
+  if [ $? -ne 0 ]; then
+    read -p "Install tmux [Enter]:"
+    if ! tmux_installation; then
+      err "Error in tmux_installation"
+    fi
+  fi
+
+  command -v nvim
+  if [ $? -ne 0 ]; then
+    read -p "Install neovim [Enter]:"
+    if ! nvim_installation; then
+      err "Error in nvim_installation"
+    fi
+
+    read -p "Install neovim's sub component [Enter]:"
+    if ! nvim_sub_installation; then
+      err "Error in nvim_sub_installation"
+    fi
+  fi
+
+  read -p "Install nerd_fonts [Enter]:"
+  if ! nerd_fonts_installation; then
+    err "Error in nerd_fonts_installation"
+  fi
+
+  read -p "Setup python env [Enter]:"
+  if ! py_setup; then
+    err "Error in py_setup"
+  fi
+
+  read -p "Apply dotfiles [Enter]:"
+  if ! dotfiles_setup; then
+    err "Error in dotfiles_setup"
+  fi
+
+  cat <<EOF
+########################
+#  Option Installtion  #
+########################
+EOF
+
+  while true; do
+    read -p "Install fq? [y/N]:" input
+    if [[ $input == "y" || $input == "Y" ]]; then
+      if ! fq_installation; then
+        err "Error in fq_installation"
+      fi
+      break
+    elif [[ $input == "n" || $input == "N" ]]; then
+      break
+    fi
+  done
+
+  while true; do
+    read -p "Install bat? [y/N]:" input
+    if [[ $input == "y" || $input == "Y" ]]; then
+      if ! bat_installation; then
+        err "Error in bat_installation"
+      fi
+      break
+    elif [[ $input == "n" || $input == "N" ]]; then
+      break
+    fi
+  done
+
+  while true; do
+    read -p "Install fd-find? [y/N]:" input
+    if [[ $input == "y" || $input == "Y" ]]; then
+      if ! fd-find_installation; then
+        err "Error in fd-find_installation"
+      fi
+      break
+    elif [[ $input == "n" || $input == "N" ]]; then
+      break
+    fi
+  done
+
+  while true; do
+    read -p "Install shellcheck? [y/N]:" input
+    if [[ $input == "y" || $input == "Y" ]]; then
+      if ! shellcheck_installation; then
+        err "Error in shellcheck_installation"
+      fi
+      break
+    elif [[ $input == "n" || $input == "N" ]]; then
+      break
+    fi
+  done
+
+  while true; do
+    read -p "Install translate-shell? [y/N]:" input
+    if [[ $input == "y" || $input == "Y" ]]; then
+      if ! translate-shell_installation; then
+        err "Error in translate-shell_installation"
+      fi
+      break
+    elif [[ $input == "n" || $input == "N" ]]; then
+      break
+    fi
+  done
+
+  while true; do
+    read -p "Install neofetch? [y/N]:" input
+    if [[ $input == "y" || $input == "Y" ]]; then
+      if ! neofetch_installation; then
+        err "Error in neofetch_installation"
+      fi
+      break
+    elif [[ $input == "n" || $input == "N" ]]; then
+      break
+    fi
+  done
+
+  while true; do
+    read -p "Setup thefuck? [y/N]:" input
+    if [[ $input == "y" || $input == "Y" ]]; then
+      if ! thefuck_setup; then
+        err "Error in thefuck_setup"
+      fi
+      break
+    elif [[ $input == "n" || $input == "N" ]]; then
+      break
+    fi
+  done
+
+  while true; do
+    read -p "Setup easily rust execution? [y/N]:" input
+    if [[ $input == "y" || $input == "Y" ]]; then
+      if ! easy_rust_exec_setup; then
+        err "Error in easy_rust_exec_setup"
+      fi
+      break
+    elif [[ $input == "n" || $input == "N" ]]; then
+      break
+    fi
+  done
+
+  cat <<EOF
+#######################
+#  Final Installtion  #
+#######################
+EOF
+  read -p "Install ohmyzsh [Enter]:"
+  sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+}
+
+[[ "${BASH_SOURCE[0]}" == "$0" ]] && main "$@"

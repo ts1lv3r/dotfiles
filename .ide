@@ -1,0 +1,36 @@
+#!/bin/bash
+
+if [ -z $TMUX ]; then
+  echo "You are not in TMUX!"
+  exit
+fi
+
+echo -ne "1: vertical\t2: horizontal\n3: vim+bash\t4: vim+bash+git\n5: 3vim+bash\t6: 2ssh+local\n--> "
+read i
+if [ $i = 1 ]; then
+  tmux split-window -v -p 50
+  tmux select-pane -t 0
+elif [ $i = 2 ]; then
+  tmux split-window -h -p 50
+  tmux select-pane -t 0
+elif [ $i = 3 ]; then
+  tmux split-window -v -p 30
+  tmux select-pane -t 0
+elif [ $i = 4 ]; then
+  tmux split-window -v -p 30
+  tmux split-window -h -p 50
+  tmux select-pane -t 0
+elif [ $i = 5 ]; then
+  tmux split-window -v -p 30
+  tmux select-pane -t 0
+  tmux split-window -h -p 66
+  tmux split-window -h -p 50
+  tmux select-pane -t 0
+elif [ $i = 6 ]; then
+  tmux split-window -h -p 50
+  tmux select-pane -t 0
+  tmux split-window -v -p 50
+  tmux select-pane -t 0
+else
+  echo "Except value!!"
+fi
